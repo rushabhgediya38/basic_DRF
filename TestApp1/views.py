@@ -2,12 +2,12 @@ from django.http import HttpResponse
 from django.http import JsonResponse
 from rest_framework.pagination import LimitOffsetPagination
 from rest_framework.parsers import JSONParser
-from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly
+from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
 from rest_framework.response import Response
 from .models import Course
 from .serializers import CourseSerializers
 from django.views.decorators.csrf import csrf_exempt
-from rest_framework.decorators import api_view, permission_classes, authentication_classes
+from rest_framework.decorators import api_view, permission_classes, authentication_classes, throttle_classes
 from rest_framework import status
 from rest_framework import permissions
 
@@ -19,13 +19,20 @@ from rest_framework import mixins
 from rest_framework import generics
 
 # for authentication
-from rest_framework.authentication import SessionAuthentication, BasicAuthentication
+from rest_framework.authentication import SessionAuthentication, BasicAuthentication, TokenAuthentication
+from rest_framework.throttling import UserRateThrottle
+
+
+class OncePerDayUserThrottle(UserRateThrottle):
+    rate = '1/minutes'  # days, Hours
 
 
 # start function based api
 @api_view(['GET', 'POST'])
+@throttle_classes([OncePerDayUserThrottle])
+# @api_view(http_method_names=['GET'])
 @authentication_classes([SessionAuthentication, BasicAuthentication])
-@permission_classes((IsAuthenticatedOrReadOnly, ))
+@permission_classes((IsAuthenticatedOrReadOnly,))
 def index(request):
     if request.method == 'GET':
         course = Course.objects.all()
@@ -44,7 +51,7 @@ def index(request):
 
 @csrf_exempt
 @api_view(['GET', 'PUT', 'DELETE'])
-@permission_classes((IsAuthenticatedOrReadOnly, ))
+@permission_classes((IsAuthenticatedOrReadOnly,))
 def detailsAll(request, pk):
     try:
         co = Course.objects.get(pk=pk)
@@ -129,6 +136,7 @@ class CourseInApi(APIView):
 class CourseMixinList(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
     queryset = Course.objects.all()
     serializer_class = CourseSerializers
+    permission_classes = [IsAuthenticated]
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -156,15 +164,24 @@ class CourseMixinPkView(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixi
 
 
 class SnippetList(generics.ListCreateAPIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Course.objects.all()
     serializer_class = CourseSerializers
+    # permission_classes = [IsAdminUser]
+    # authentication_classes = [TokenAuthentication]
+
+    #  override this List method
+    def List(self, request):
+        queryset = self.get_object()
+        serilaizers = CourseSerializers(queryset, many=True)
+        return Response(serilaizers.data)
 
 
 class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
+    permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Course.objects.all()
     serializer_class = CourseSerializers
 
-
 # http POST http://127.0.0.1:8000/api-token-auth/ username='rushabh' password="rushabh"
 # http GET http://127.0.0.1:8000/api2/ "Authorization: Token 79eaa107382806937d0ef202566db945327372c8"
-
+# http GET http://127.0.0.1:8000/django-rest-allauth/token/changepassword "Authorization: Token 79eaa107382806937d0ef202566db945327372c8"
