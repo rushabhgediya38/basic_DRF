@@ -5,7 +5,7 @@ from rest_framework.parsers import JSONParser
 from rest_framework.permissions import IsAuthenticated, IsAuthenticatedOrReadOnly, IsAdminUser
 from rest_framework.response import Response
 from .models import Course
-from .serializers import CourseSerializers
+from .serializers import CourseSerializers, NestedCourseSerilaizers
 from django.views.decorators.csrf import csrf_exempt
 from rest_framework.decorators import api_view, permission_classes, authentication_classes, throttle_classes
 from rest_framework import status
@@ -36,7 +36,8 @@ class OncePerDayUserThrottle(UserRateThrottle):
 def index(request):
     if request.method == 'GET':
         course = Course.objects.all()
-        serializers = CourseSerializers(course, many=True)
+        # serializers = CourseSerializers(course, many=True)
+        serializers = NestedCourseSerilaizers(course, many=True)
         return Response(serializers.data)
 
     if request.method == 'POST':
@@ -135,8 +136,8 @@ class CourseInApi(APIView):
 # start mixin API
 class CourseMixinList(mixins.ListModelMixin, mixins.CreateModelMixin, generics.GenericAPIView):
     queryset = Course.objects.all()
-    serializer_class = CourseSerializers
-    permission_classes = [IsAuthenticated]
+    serializer_class = NestedCourseSerilaizers
+    permission_classes = [IsAuthenticatedOrReadOnly]
 
     def get(self, request, *args, **kwargs):
         return self.list(request, *args, **kwargs)
@@ -148,7 +149,7 @@ class CourseMixinList(mixins.ListModelMixin, mixins.CreateModelMixin, generics.G
 class CourseMixinPkView(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixins.DestroyModelMixin,
                         generics.GenericAPIView):
     queryset = Course.objects.all()
-    serializer_class = CourseSerializers
+    serializer_class = NestedCourseSerilaizers
 
     def get(self, request, *args, **kwargs):
         return self.retrieve(request, *args, **kwargs)
@@ -164,23 +165,24 @@ class CourseMixinPkView(mixins.RetrieveModelMixin, mixins.UpdateModelMixin, mixi
 
 
 class SnippetList(generics.ListCreateAPIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    # permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Course.objects.all()
-    serializer_class = CourseSerializers
+    serializer_class = NestedCourseSerilaizers
     # permission_classes = [IsAdminUser]
     # authentication_classes = [TokenAuthentication]
 
     #  override this List method
     def List(self, request):
         queryset = self.get_object()
-        serilaizers = CourseSerializers(queryset, many=True)
+        serilaizers = NestedCourseSerilaizers(queryset, many=True)
         return Response(serilaizers.data)
 
 
 class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
     permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Course.objects.all()
-    serializer_class = CourseSerializers
+    serializer_class = NestedCourseSerilaizers
+
 
 # http POST http://127.0.0.1:8000/api-token-auth/ username='rushabh' password="rushabh"
 # http GET http://127.0.0.1:8000/api2/ "Authorization: Token 79eaa107382806937d0ef202566db945327372c8"

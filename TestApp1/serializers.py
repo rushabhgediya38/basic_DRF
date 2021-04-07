@@ -20,9 +20,18 @@ from .models import Course, CourseCategory
 
 
 class CourseSerializers(serializers.ModelSerializer):
+    # ingredients = serializers.StringRelatedField(many=True)
+    # ingredients = serializers.PrimaryKeyRelatedField(many=True, read_only=True)
+    # ingredients = serializers.HyperlinkedRelatedField()
+    # ingredients = serializers.SlugRelatedField(
+    #     many=True,
+    #     read_only=True,
+    #     slug_field='protein'
+    # )
+
     class Meta:
         model = Course
-        fields = '__all__'
+        fields = ['id', 'Name', 'price', 'Discount', 'Duration', 'AuthorName', 'owner', 'ingredients']
 
     def create(self, validated_data):
         return Course.objects.create(**validated_data)
@@ -37,3 +46,28 @@ class IngredientSerializer(serializers.ModelSerializer):
     class Meta:
         model = CourseCategory
         fields = "__all__"
+
+
+# nested serilaizers
+
+class NestedCourseCategorySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = CourseCategory
+        fields = ['protein', 'title', 'duration']
+
+
+class NestedCourseSerilaizers(serializers.ModelSerializer):
+    ingredients = NestedCourseCategorySerializer(many=True)
+
+    class Meta:
+        model = Course
+        fields = ['id', 'Name', 'price', 'Discount', 'Duration', 'AuthorName', 'owner', 'ingredients']
+
+    def create(self, validated_data):
+        ingredients_data = validated_data.pop('ingredients')
+        product = Course.objects.create(**validated_data)
+        for track_data in ingredients_data:
+            CourseCategory.objects.create(product=product, **track_data)
+        return product
+
+
