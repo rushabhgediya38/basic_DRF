@@ -23,6 +23,12 @@ from rest_framework.authentication import SessionAuthentication, BasicAuthentica
 from rest_framework.throttling import UserRateThrottle
 
 
+# filtering data
+# import django_filters.rest_framework
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters
+
+
 class OncePerDayUserThrottle(UserRateThrottle):
     rate = '1/minutes'  # days, Hours
 
@@ -44,7 +50,7 @@ def index(request):
         allData = JSONParser().parse(request)
         serializers = CourseSerializers(data=allData)
         if serializers.is_valid():
-            serializers.save()
+            serializers.save(owner=request.user)
             return Response(serializers.data)
         else:
             return Response(serializers.errors)
@@ -71,7 +77,7 @@ def detailsAll(request, pk):
         getAllData = JSONParser().parse(request)
         serializer = CourseSerializers(co, data=getAllData)
         if serializer.is_valid():
-            serializer.save()
+            serializer.save(owner=request.user)
             return Response(serializer.data)
         else:
             return Response(serializer.errors)
@@ -171,6 +177,19 @@ class SnippetList(generics.ListCreateAPIView):
     # permission_classes = [IsAdminUser]
     # authentication_classes = [TokenAuthentication]
 
+    # filtering data
+    # filter_backends = [DjangoFilterBackend]
+    # filterset_fields = ['Name', 'owner']
+
+    # it will allowed + or -
+    # ordering_fields = ['username', 'email']
+    
+    # search data return single search result
+    # = mens exact name
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['=Name', 'Discount']
+    ordering_fields = ['Name', 'AuthorName']
+
     #  override this List method
     def List(self, request):
         queryset = self.get_object()
@@ -179,7 +198,7 @@ class SnippetList(generics.ListCreateAPIView):
 
 
 class SnippetDetail(generics.RetrieveUpdateDestroyAPIView):
-    permission_classes = [IsAuthenticatedOrReadOnly]
+    # permission_classes = [IsAuthenticatedOrReadOnly]
     queryset = Course.objects.all()
     serializer_class = NestedCourseSerilaizers
 

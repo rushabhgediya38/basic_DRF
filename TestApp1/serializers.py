@@ -31,7 +31,7 @@ class CourseSerializers(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ['id', 'Name', 'price', 'Discount', 'Duration', 'AuthorName', 'owner', 'ingredients']
+        fields = ['id', 'Name', 'price', 'Discount', 'Duration', 'AuthorName', 'ingredients']
 
     def create(self, validated_data):
         return Course.objects.create(**validated_data)
@@ -61,7 +61,7 @@ class NestedCourseSerilaizers(serializers.ModelSerializer):
 
     class Meta:
         model = Course
-        fields = ['id', 'Name', 'price', 'Discount', 'Duration', 'AuthorName', 'owner', 'ingredients']
+        fields = ['id', 'Name', 'price', 'Discount', 'Duration', 'AuthorName', 'ingredients']
 
     def create(self, validated_data):
         ingredients_data = validated_data.pop('ingredients')
@@ -70,4 +70,20 @@ class NestedCourseSerilaizers(serializers.ModelSerializer):
             CourseCategory.objects.create(product=product, **track_data)
         return product
 
+    # def update(self, instance, validated_data):
+    #     ingredients_data = validated_data.pop('ingredients')
+    #
+    #     category = instance.ingredients
+    #
+    #     instance.Name = validated_data.get('username', instance.username)
+    #     instance.price = validated_data.get('email', instance.email)
+    #     instance.Discount = validated_data.get('email', instance.email)
+    #     instance.Duration = validated_data.get('email', instance.email)
+    #     instance.AuthorName = validated_data.get('email', instance.email)
+    #     instance.save()
+    #
+    #     for track_data in ingredients_data:
+    #         CourseCategory.objects.create(product=instance, **track_data)
+    #         category.save()
+    #     return instance
 
